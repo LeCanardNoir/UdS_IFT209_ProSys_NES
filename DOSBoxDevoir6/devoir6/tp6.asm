@@ -54,7 +54,11 @@ MARIO.FEETRIGHT.X = $71F
 
 GAME.TIC.SEC = $200 
 GAME.TIC.HSEC = $201 
-GAME.TIC.TSEC = $202 
+GAME.TIC.TSEC = $202
+GAME.TICE.SEC.TEN = $203 
+
+MARIO.CURRENT.STATE = $204
+MARIO.CURRENT.MOVE = $205
 
 
 ;Variables pour conserver les états des boutons.
@@ -212,9 +216,14 @@ GameTicCounter:
 
 	lda GAME.TIC.TSEC
 	adc #1
-	cmp #2
+	cmp #1
 	beq gameTicCounter03
 	sta GAME.TIC.TSEC
+
+	lda MARIO.CURRENT.MOVE
+	adc #16
+	cmp #44
+	bpl gameTicCounter04
 
 	jmp gameTicCounter99
 
@@ -234,6 +243,11 @@ gameTicCounter02:
 gameTicCounter03:
 	lda #0
 	sta GAME.TIC.TSEC
+	jmp gameTicCounter99
+
+gameTicCounter04:
+	lda #0
+	sta MARIO.CURRENT.MOVE
 	jmp gameTicCounter99
 
 gameTicCounter99:
@@ -294,6 +308,8 @@ defilement02:
 	rts
 
 defilement99:
+	lda #0
+	;sta MARIO.CURRENT.MOVE
 	rts
 
 
@@ -316,8 +332,8 @@ lecture10:
 
 	;Vérification si B est enfoncé
 	
-	lda 	B.READ		;obtient la valeur de B
-	beq 	lecture20	;si c’est 0, passe à la suite du code
+	;lda 	B.READ		;obtient la valeur de B
+	;beq 	lecture20	;si c’est 0, passe à la suite du code
 	; B est enfoncé	
 	;code pour B enfoncé	
 	;B n’est pas enfoncé
@@ -344,6 +360,22 @@ lecture40:
 	;code pour RIGHT enfoncé
 	;RIGHT n’est pas enfoncé
 lecture50:
+	clc
+	lda #0
+	lda STA.READ
+	sta MARIO.CURRENT.STATE
+	lda RIGHT.READ
+	adc MARIO.CURRENT.STATE
+	sta MARIO.CURRENT.STATE
+	lda LEFT.READ
+	adc MARIO.CURRENT.STATE
+	sta MARIO.CURRENT.STATE
+	lda MARIO.CURRENT.STATE
+	cmp #0
+	beq	lecture100
+	rts
+lecture100:
+	jsr marioMove100
 	rts
 
 
@@ -450,25 +482,83 @@ dessiner10:
 
 MarioMove:
 	;jsr wait_vblank
-	ldx RIGHT.READ
-	bne	MarioMove01
-	ldx LEFT.READ
-	bne	MarioMove02
-	rts	
+	; ldx RIGHT.READ
+	; bne	MarioMove01
+	; ldx LEFT.READ
+	; bne	MarioMove02
+	; rts	
 MarioMove01:
-    ldx MARIO.HEADLEFT.X
-    inx
-    stx MARIO.HEADLEFT.X
+	clc
+	lda MARIO.CURRENT.MOVE
+	adc	#1
+	sta	MARIO.HEADLEFT.T
+	adc	#2	
+	sta	MARIO.HEADRIGHT.T
+	adc	#3
+	sta	MARIO.CHESTLEFT.T
+	adc	#4
+	sta	MARIO.CHESTRIGHT.T
+	adc	#5
+	sta	MARIO.BELLYLEFT.T
+	adc	#6
+	sta	MARIO.BELLYRIGHT.T
+	adc	#%00000000
+	sta	MARIO.BELLYRIGHT.S
+	adc	#7
+	sta	MARIO.FEETLEFT.T
+	adc	#8
+	sta	MARIO.FEETRIGHT.T
+	adc	#%00000000
+	sta	MARIO.FEETRIGHT.S
     ;jsr wait_vblank
     jsr UpdateSprites
 	rts	
 MarioMove02:
-    ldx MARIO.HEADLEFT.X
-    dex
-    stx MARIO.HEADLEFT.X
+	ldx	#1
+	stx	MARIO.HEADLEFT.T
+	ldx	#2	
+	stx	MARIO.HEADRIGHT.T
+	ldx	#3
+	stx	MARIO.CHESTLEFT.T
+	ldx	#4
+	stx	MARIO.CHESTRIGHT.T
+	ldx	#5
+	stx	MARIO.BELLYLEFT.T
+	ldx	#6
+	stx	MARIO.BELLYRIGHT.T
+	ldx	#%00000000
+	stx	MARIO.BELLYRIGHT.S
+	ldx	#7
+	stx	MARIO.FEETLEFT.T
+	ldx	#8
+	stx	MARIO.FEETRIGHT.T
+	ldx	#%00000000
+	stx	MARIO.FEETRIGHT.S
     ;jsr wait_vblank
     jsr UpdateSprites
-	rts	
+	rts
+marioMove100:
+	clc
+	lda	#1
+	sta	MARIO.HEADLEFT.T
+	lda	#2	
+	sta	MARIO.HEADRIGHT.T
+	lda	#77
+	sta	MARIO.CHESTLEFT.T
+	lda	#78
+	sta	MARIO.CHESTRIGHT.T
+	lda	#75
+	sta	MARIO.BELLYLEFT.T
+	sta	MARIO.BELLYRIGHT.T
+	lda	#%01000000
+	sta	MARIO.BELLYRIGHT.S
+	lda	#76
+	sta	MARIO.FEETLEFT.T
+	sta	MARIO.FEETRIGHT.T
+	lda	#%01000000
+	sta	MARIO.FEETRIGHT.S
+    jsr UpdateSprites
+	rts
 	
 	
 InitBackground:
