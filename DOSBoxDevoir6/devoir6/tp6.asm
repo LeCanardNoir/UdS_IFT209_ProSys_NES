@@ -120,7 +120,7 @@ Main:
     stx DEFIL
 mainEnd:
 	jsr	Lecture
-	jsr Defilement
+	;jsr Defilement
 	jmp mainEnd		;Boucle infinie
 
 
@@ -212,7 +212,7 @@ GameTicCounter:
 
 	lda GAME.TIC.TSEC
 	adc #1
-	cmp #5
+	cmp #2
 	beq gameTicCounter03
 	sta GAME.TIC.TSEC
 
@@ -253,7 +253,6 @@ UpdateSprites:
  rts			;fin
 
 Defilement:	
-	jsr wait_vblank
 	ldx RIGHT.READ
 	bne	defilement01
 	ldx LEFT.READ
@@ -264,27 +263,30 @@ defilement01:
 	lda GAME.TIC.TSEC
 	cmp #0
 	bne defilement99
-	jsr MarioMove
+	jsr wait_vblank	
+	jsr MarioMove02
 	ldx DEFIL
 	stx $2005            
-	inx
-	inx
-	inx
+	;inx
+	;inx
+	;inx
 	inx
 	stx DEFIL
 	ldx #0
-	stx $2005
+	stx $2005	
 	rts
 
 defilement02:
 	lda GAME.TIC.TSEC
 	cmp #0
 	bne defilement99
+	jsr wait_vblank	
+	jsr MarioMove01
 	ldx DEFIL
 	stx $2005            
-	dex
-	dex
-	dex
+	;dex
+	;dex
+	;dex
 	dex
 	stx DEFIL
 	ldx #0
@@ -331,32 +333,20 @@ lecture30:
 	lda 	RIGHT.READ		;obtient la valeur de RIGHT
 	beq 	lecture40	;si c’est 0, passe à la suite du code
 	; RIGHT est enfoncé	
+	jsr defilement01
 	;code pour RIGHT enfoncé
 	;RIGHT n’est pas enfoncé
 lecture40:
+	lda 	LEFT.READ		;obtient la valeur de RIGHT
+	beq 	lecture50	;si c’est 0, passe à la suite du code
+	; RIGHT est enfoncé	
+	jsr defilement02
+	;code pour RIGHT enfoncé
+	;RIGHT n’est pas enfoncé
+lecture50:
 	rts
 
-MarioMove:
-marioMove01:
-	clc
-	lda	#1
-	sta	MARIO.HEADLEFT.T
-	lda	#0	
-	sta	MARIO.HEADLEFT.S
-	lda	#0
-	sta	MARIO.HEADLEFT.Y
-	lda	#8
-	sta	MARIO.HEADLEFT.X
 
-	lda	#2	
-	sta	MARIO.HEADRIGHT.T
-	lda	#0
-	sta	MARIO.HEADRIGHT.S	
-	lda	#0
-	sta	MARIO.HEADRIGHT.Y
-	lda	#8
-	sta	MARIO.HEADRIGHT.X
-	rts
 	;Fonction Dessiner.  Initialise les 8 premiers sprites et les positionne correctement.
 
 Dessiner:
@@ -372,6 +362,7 @@ Dessiner:
 
 	lda	#2	
 	sta	MARIO.HEADRIGHT.T
+
 	lda	#0
 	sta	MARIO.HEADRIGHT.S	
 	lda	#0
@@ -457,6 +448,27 @@ dessiner10:
 	bne	dessiner10
 	rts	
 
+MarioMove:
+	;jsr wait_vblank
+	ldx RIGHT.READ
+	bne	MarioMove01
+	ldx LEFT.READ
+	bne	MarioMove02
+	rts	
+MarioMove01:
+    ldx MARIO.HEADLEFT.X
+    inx
+    stx MARIO.HEADLEFT.X
+    ;jsr wait_vblank
+    jsr UpdateSprites
+	rts	
+MarioMove02:
+    ldx MARIO.HEADLEFT.X
+    dex
+    stx MARIO.HEADLEFT.X
+    ;jsr wait_vblank
+    jsr UpdateSprites
+	rts	
 	
 	
 InitBackground:
