@@ -53,52 +53,54 @@ MARIO.FEETRIGHT.S = $71E
 MARIO.FEETRIGHT.X = $71F
 
 
+MARIO.CURRENT = $720
+
 
  .code			;Segment de code
- .org $c000		;débutant à l'adresse $C000 (banque PRG #0)
+ .org $c000		;dï¿½butant ï¿½ l'adresse $C000 (banque PRG #0)
 
-	;Fonction main.  Appelée lors d'une interruption Reset.
+	;Fonction main.  Appelï¿½e lors d'une interruption Reset.
 
 Main:
 	sei			;Interdit les interruptions IRQ et BRK
- 	cld			;Mode décimal désactivé
- 	ldx #$ff		;Prépare le pointeur de pile...
-	txs			;Pointeur de pile initilisé au dessus de la pile
+ 	cld			;Mode dï¿½cimal dï¿½sactivï¿½
+ 	ldx #$ff		;Prï¿½pare le pointeur de pile...
+	txs			;Pointeur de pile initilisï¿½ au dessus de la pile
  	inx			;place la valeur 0 dans X
 
 
-	stx $2000		;Initialise le PPU temporairement: NMI désactivées
+	stx $2000		;Initialise le PPU temporairement: NMI dï¿½sactivï¿½es
 
- 	jsr InitSpriteMem		;fonction qui met à zéro la mémoire des sprites
+ 	jsr InitSpriteMem		;fonction qui met ï¿½ zï¿½ro la mï¿½moire des sprites
 	jsr palette				;fonction qui initialise les palettes 
 	jsr Dessiner			;fonction qui dessine le personnage
-	jsr UpdateSprites 		;fonction qui copie l'information dans la mémoire des sprites
-	jsr InitBackground		;Initialise l'arrière-plan 
+	jsr UpdateSprites 		;fonction qui copie l'information dans la mï¿½moire des sprites
+	jsr InitBackground		;Initialise l'arriï¿½re-plan 
 
-	lda		#0				;Initialise le défilement
+	lda		#0				;Initialise le dï¿½filement
 	sta		$2005			;... 0 en X
 	sta		$2005			;... 0 en Y
 	
 	;Initialise le PPU:
 	; ($2000)
-	;-Interruptions NMI activées
+	;-Interruptions NMI activï¿½es
 	;-Grandeur des sprites: 8x8
-	;-table de schémas pour l'arrière-plan: #0
-	;-table de schémas pour les sprites: #1
-	;-incrémentation d'index : +1
-	;-numéro de table de noms affichée: 0
+	;-table de schï¿½mas pour l'arriï¿½re-plan: #0
+	;-table de schï¿½mas pour les sprites: #1
+	;-incrï¿½mentation d'index : +1
+	;-numï¿½ro de table de noms affichï¿½e: 0
 
 	;($2001)
-	;-aucune modification d'intensité des couleurs
+	;-aucune modification d'intensitï¿½ des couleurs
 	;-sprites visibles
-	;-arrière-plan visible
-	;-première colonne invisible pour les sprites mais pas pour l'arrière-plan
+	;-arriï¿½re-plan visible
+	;-premiï¿½re colonne invisible pour les sprites mais pas pour l'arriï¿½re-plan
 	;-affichage couleur
 
 	lda #%10010000	;place la valeur binaire 10010000 dans A
-	sta $2000		;écrit dans le registre de contrôle #1
+	sta $2000		;ï¿½crit dans le registre de contrï¿½le #1
 	lda #%00011010	;place la valeur binaire 00011010 dans A
-	sta $2001		;écrit dans le registre de contrôle #2
+	sta $2001		;ï¿½crit dans le registre de contrï¿½le #2
 
     ldx #0
     stx DEFIL
@@ -107,33 +109,33 @@ mainEnd:
 
 
 
-	;Fonction qui attend une période de VBlank
+	;Fonction qui attend une pï¿½riode de VBlank
 
 wait_vblank:
- 	bit $2002		;teste les bits du registre d'état du PPU
- 	bpl wait_vblank	;tant que le bit 7 est éteint (signe = 0), on boucle
+ 	bit $2002		;teste les bits du registre d'ï¿½tat du PPU
+ 	bpl wait_vblank	;tant que le bit 7 est ï¿½teint (signe = 0), on boucle
 	
 	rts			;fin	
 
-	;Fonction qui met à zéro tous les 256 octets du segment réservé aux sprites
+	;Fonction qui met ï¿½ zï¿½ro tous les 256 octets du segment rï¿½servï¿½ aux sprites
 
 InitSpriteMem:
  	lda #0		;initialise A avec 0
 	tay			;initialise Y avec 0 aussi
 
 init00:
-	sta $700,y		;écrit 0 à $700 + Y
-	iny				;incrémente Y
+	sta $700,y		;ï¿½crit 0 ï¿½ $700 + Y
+	iny				;incrï¿½mente Y
 	bne init00		;lorsque Y redevient 0 (255 + 1 = 0), fin	
 	
 	rts			;fin
 
 
 
-	;segment de données contenant les numéros de couleur des palettes
+	;segment de donnï¿½es contenant les numï¿½ros de couleur des palettes
 paldata:
 
-; Palette d'arrière-plan.  Tout est noir sauf la première palette
+; Palette d'arriï¿½re-plan.  Tout est noir sauf la premiï¿½re palette
 	.byte	$0f,$20,$10,$00	;Tons de gris, pratique pour voir les tuiles en debug
 	.byte	$0f,$0f,$0f,$0f	;Noir
 	.byte	$0f,$0f,$0f,$0f	;Noir
@@ -147,20 +149,20 @@ paldata:
 
 	;fonction qui initialise les palettes.
 palette:
-	jsr wait_vblank			;attend une période de VBlank avant d'écrire
+	jsr wait_vblank			;attend une pï¿½riode de VBlank avant d'ï¿½crire
 
-	lda #$3f				;initialise le registre d'index de la mémoire vidéo
-	sta $2006				;avec l'adresse $3F00 : mémoire de palettes
+	lda #$3f				;initialise le registre d'index de la mï¿½moire vidï¿½o
+	sta $2006				;avec l'adresse $3F00 : mï¿½moire de palettes
 	lda #0					;...
 	sta $2006				;...
  
 	ldx #0					;index de lecture des valeurs de palette
 
 do_palette:
-	lda paldata,x			;obtient un numéro de couleur
-	sta $2007				;écrit le numéro de couleur dans le registre de données
-	inx						;incrémente l'index
-	cpx #32					;a-t-on écrit les 32 couleurs?
+	lda paldata,x			;obtient un numï¿½ro de couleur
+	sta $2007				;ï¿½crit le numï¿½ro de couleur dans le registre de donnï¿½es
+	inx						;incrï¿½mente l'index
+	cpx #32					;a-t-on ï¿½crit les 32 couleurs?
 	bne do_palette			;sinon, continue
 	
 	rts						;fin
@@ -173,7 +175,7 @@ do_palette:
 	
 
 
-	;Routine d'interruption pour NMI: met à jour les sprites
+	;Routine d'interruption pour NMI: met ï¿½ jour les sprites
 NMI_InterruptRoutine:    
 
             ldx DEFIL
@@ -187,8 +189,8 @@ NMI_InterruptRoutine:
             stx $2005
 
 
-		;	lda	#$07		;Les sprites se trouvent dans le segment $0700 à $07FF
-		;	sta	$4014		;Commande de copie DMA de tout le segment $0700 à $07FF dans la mémoire des sprites
+		;	lda	#$07		;Les sprites se trouvent dans le segment $0700 ï¿½ $07FF
+		;	sta	$4014		;Commande de copie DMA de tout le segment $0700 ï¿½ $07FF dans la mï¿½moire des sprites
 		
  rti 
 
@@ -197,11 +199,11 @@ NMI_InterruptRoutine:
 IRQ_BRK_InterruptRoutine:
  rti
 
-	;Mise à jour de la mémoire des sprites par DMA
+	;Mise ï¿½ jour de la mï¿½moire des sprites par DMA
 
 UpdateSprites: 
- lda #7			;Segment de la mémoire $0700-$07FF
- sta $4014 		;déclenche la copie DMA 
+ lda #7			;Segment de la mï¿½moire $0700-$07FF
+ sta $4014 		;dï¿½clenche la copie DMA 
  rts			;fin
 
 
@@ -209,26 +211,32 @@ UpdateSprites:
 
 Dessiner:
 	clc
-	lda	#1
+	ldy	marioTileCurrent
+	ldx marioTile,Y	
+ 	lda #0		;initialise A avec 0
+	tay			;initialise Y avec 0 aussi
+	sta	$720,y
+	lda	($720),y	;#1 tile 0
 	sta	MARIO.HEADLEFT.T
-	lda	#0	
+	lda #0	
 	sta	MARIO.HEADLEFT.S
 	lda	#0
 	sta	MARIO.HEADLEFT.Y
 	lda	#0
 	sta	MARIO.HEADLEFT.X
 
-	lda	#2	
+	iny	;#2	tile 1
+	lda ($720),y
 	sta	MARIO.HEADRIGHT.T
-
-	lda	#0
+	lda #0
 	sta	MARIO.HEADRIGHT.S	
 	lda	#0
 	sta	MARIO.HEADRIGHT.Y
 	lda	#8
 	sta	MARIO.HEADRIGHT.X
 
-	lda	#77
+	iny	;#77 tile 2
+	lda ($720),y
 	sta	MARIO.CHESTLEFT.T
 	lda	#0
 	sta	MARIO.CHESTLEFT.S
@@ -237,7 +245,8 @@ Dessiner:
 	lda	#0
 	sta	MARIO.CHESTLEFT.X
 
-	lda	#78
+	iny	;#78 ;tile 3
+	lda ($720),y
 	sta	MARIO.CHESTRIGHT.T
 	lda	#0
 	sta	MARIO.CHESTRIGHT.S
@@ -246,8 +255,11 @@ Dessiner:
 	lda	#8
 	sta	MARIO.CHESTRIGHT.X
 
-	lda	#75
+	iny	;#75 tile 4
+	lda ($720),y
 	sta	MARIO.BELLYLEFT.T
+	iny	;#75 tile 5
+	lda ($720),y
 	sta	MARIO.BELLYRIGHT.T
 	lda	#0	
 	sta	MARIO.BELLYLEFT.S	
@@ -265,8 +277,11 @@ Dessiner:
 	sta	MARIO.BELLYRIGHT.X
 
 
-	lda	#76
+	iny	;#76 tile 6
+	lda ($720),y	
 	sta	MARIO.FEETLEFT.T
+	iny	;#76 tile 6
+	lda ($720),y	
 	sta	MARIO.FEETRIGHT.T
 	lda	#0
 	sta	MARIO.FEETLEFT.S	
@@ -312,56 +327,56 @@ dessiner10:
 	
 InitBackground:
 
-	jsr		wait_vblank		;attend une période de VBlank avant d'écrire dans la table de noms
+	jsr		wait_vblank		;attend une pï¿½riode de VBlank avant d'ï¿½crire dans la table de noms
 	
 	lda		#0
 	sta		$2005
 	sta		$2005
 	
-	lda		#$20			;8 bits supérieurs de l'adresse de la table de noms #0
-	sta		$2006			;écriture dans l'index
-	lda		#00				;8 bits inférieurs
-	sta		$2006			;écriture dans l'index
-	ldx		#0				;Initialise le compteur à 0
+	lda		#$20			;8 bits supï¿½rieurs de l'adresse de la table de noms #0
+	sta		$2006			;ï¿½criture dans l'index
+	lda		#00				;8 bits infï¿½rieurs
+	sta		$2006			;ï¿½criture dans l'index
+	ldx		#0				;Initialise le compteur ï¿½ 0
 	
 	
 initbg10:
 	
-	lda		bgdata0,X		;lit l'octet à bgdata0 + X, le no de tuile courant	
-	sta		$2007			;écrit dans la table de noms
-	inx						;incrémente l'index
-	cpx		#0				;a-t-on passé toutes les tuiles?
+	lda		bgdata0,X		;lit l'octet ï¿½ bgdata0 + X, le no de tuile courant	
+	sta		$2007			;ï¿½crit dans la table de noms
+	inx						;incrï¿½mente l'index
+	cpx		#0				;a-t-on passï¿½ toutes les tuiles?
 	bne		initbg10		;sinon, suite 
 	
 	
 initbg20:
 	
-	lda		bgdata1,X		;lit l'octet à bgdata1 + X, le no de tuile courant
-	sta		$2007			;écrit dans la table de noms
-	inx						;incrémente l'index
-	cpx		#0				;a-t-on passé toutes les tuiles?
+	lda		bgdata1,X		;lit l'octet ï¿½ bgdata1 + X, le no de tuile courant
+	sta		$2007			;ï¿½crit dans la table de noms
+	inx						;incrï¿½mente l'index
+	cpx		#0				;a-t-on passï¿½ toutes les tuiles?
 	bne		initbg20		;sinon, suite 
 	
 initbg30:
 	
-	lda		bgdata2,X		;lit l'octet à bgdata2 + X, le no de tuile courant
-	sta		$2007			;écrit dans la table de noms
-	inx						;incrémente l'index
-	cpx		#0				;a-t-on passé toutes les tuiles?
+	lda		bgdata2,X		;lit l'octet ï¿½ bgdata2 + X, le no de tuile courant
+	sta		$2007			;ï¿½crit dans la table de noms
+	inx						;incrï¿½mente l'index
+	cpx		#0				;a-t-on passï¿½ toutes les tuiles?
 	bne		initbg30		;sinon, suite 
 	
 
 initbg40:
 	
-	lda		bgdata3,X		;lit l'octet à bgdata3 + X, le no de tuile courant
-	sta		$2007			;écrit dans la table de noms
-	inx						;incrémente l'index
-	cpx		#192		;a-t-on passé toutes les tuiles?
+	lda		bgdata3,X		;lit l'octet ï¿½ bgdata3 + X, le no de tuile courant
+	sta		$2007			;ï¿½crit dans la table de noms
+	inx						;incrï¿½mente l'index
+	cpx		#192		;a-t-on passï¿½ toutes les tuiles?
 	bne		initbg40		;sinon, suite 
 	
 	rts						;fin du sous-programme.
 	
-;Données initiales se trouvant dans la table de noms.
+;Donnï¿½es initiales se trouvant dans la table de noms.
 ;Matrice de 32x30 tuiles.
 	
 	bgdata0:	
@@ -428,7 +443,12 @@ initbg40:
 	.byte $b5,$b6,$b5,$b6,$b5,$b6,$b5,$b6,$b5,$b6,$b5,$b6,$b5,$b6,$b5,$b6
 	.byte $b7,$b8,$b7,$b8,$b7,$b8,$b7,$b8,$b7,$b8,$b7,$b8,$b7,$b8,$b7,$b8
 	.byte $b7,$b8,$b7,$b8,$b7,$b8,$b7,$b8,$b7,$b8,$b7,$b8,$b7,$b8,$b7,$b8
-	
+	marioTile:
+		.word marioTile1
+	marioTile1:
+		.byte $01, $02, $4D, $4E, $4B, $4B , $4C, $4C
+	marioTileCurrent:
+		.byte $00
 	
 
  .bank 1
