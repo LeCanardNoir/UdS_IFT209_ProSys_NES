@@ -60,6 +60,11 @@ GAME.TICE.SEC.TEN = $203
 MARIO.CURRENT.STATE = $204
 MARIO.CURRENT.SPRITE = $205
 
+CLOCK.DIGIT.Y	=	$250		;Premier octet: coordonn�e Y
+CLOCK.DIGIT.T	=	$251		;second octet: num�ro de tuile
+CLOCK.DIGIT.S	=	$252		;troisi�me octet: attributs
+CLOCK.DIGIT.X	=	$253		;quatri�me octet: coordonn�e X
+
 
 ;Variables pour conserver les états des boutons.
 A.READ = $08
@@ -112,6 +117,19 @@ Main:
 	;-premi�re colonne invisible pour les sprites mais pas pour l'arri�re-plan
 	;-affichage couleur
 
+
+	lda	#1						;Initialise le no de tuile � 1
+	sta	CLOCK.DIGIT.T			;...
+	lda	#120					;Positionne le chiffre � (128,120)
+	sta	CLOCK.DIGIT.Y			;...
+	lda	#128					;...
+	sta	CLOCK.DIGIT.X			;...
+	lda	#0						;Les attributs sont  � 0 : palette 0 et aucune transformation
+	sta	CLOCK.DIGIT.S			;....
+
+	jsr wait_vblank
+
+	
 	lda #%10010000	;place la valeur binaire 10010000 dans A
 	sta $2000		;�crit dans le registre de contr�le #1
 	lda #%00011010	;place la valeur binaire 00011010 dans A
@@ -211,7 +229,7 @@ GameTicCounter:
 
 	lda GAME.TIC.MARIO
 	adc #1
-	cmp #10
+	cmp #6
 	beq gameTicCounter02
 	sta GAME.TIC.MARIO
 
@@ -257,23 +275,13 @@ UpdateSprites:
  sta $4014 		;d�clenche la copie DMA
  rts			;fin
 
-Defilement:
-	; ldx RIGHT.READ
-	; bne	defilement01
-	; ldx LEFT.READ
-	; bne	defilement02
-	; rts
-
 defilement01:
 	lda GAME.TIC.TSEC
 	cmp #0
 	bne defilement99
-	jsr wait_vblank
 	ldx DEFIL
+	jsr wait_vblank
 	stx $2005
-	;inx
-	;inx
-	;inx
 	inx
 	stx DEFIL
 	ldx #0
@@ -284,12 +292,9 @@ defilement02:
 	lda GAME.TIC.TSEC
 	cmp #0
 	bne defilement99
-	jsr wait_vblank
 	ldx DEFIL
+	jsr wait_vblank
 	stx $2005
-	;dex
-	;dex
-	;dex
 	dex
 	stx DEFIL
 	ldx #0
@@ -298,7 +303,6 @@ defilement02:
 
 defilement99:
 	lda #0
-	;sta MARIO.CURRENT.SPRITE
 	rts
 
 
@@ -472,37 +476,33 @@ dessiner10:
 	rts
 
 MarioMove01:
-	clc
-	lda GAME.TIC.MARIO
-	cmp #0
+	ldx GAME.TIC.MARIO
+	cpx #0
 	bne MarioMove03
-	clc
-	lda MARIO.CURRENT.SPRITE
-	cmp #23
-	bpl MarioMove02
-	clc
-	lda MARIO.CURRENT.SPRITE
-	adc #1
-	sta	MARIO.HEADLEFT.T
-	adc #1
-	sta	MARIO.HEADRIGHT.T
-	adc #1
-	sta	MARIO.CHESTLEFT.T
-	adc #1
-	sta	MARIO.CHESTRIGHT.T
-	adc #1
-	sta	MARIO.BELLYLEFT.T
-	adc #1
-	sta	MARIO.BELLYRIGHT.T
-	adc #1
-	sta	MARIO.FEETLEFT.T
-	adc #1
-	sta	MARIO.FEETRIGHT.T
-	sta MARIO.CURRENT.SPRITE
+	ldx MARIO.CURRENT.SPRITE
+	cpx #24
+	beq MarioMove02
+	inx
+	stx	MARIO.HEADLEFT.T
+	inx
+	stx	MARIO.HEADRIGHT.T
+	inx
+	stx	MARIO.CHESTLEFT.T
+	inx
+	stx	MARIO.CHESTRIGHT.T
+	inx
+	stx	MARIO.BELLYLEFT.T
+	inx
+	stx	MARIO.BELLYRIGHT.T
+	inx
+	stx	MARIO.FEETLEFT.T
+	inx
+	stx	MARIO.FEETRIGHT.T
+	stx MARIO.CURRENT.SPRITE
 
-	lda	#%00000000
-	sta	MARIO.BELLYRIGHT.S
-	sta	MARIO.FEETRIGHT.S
+	ldx	#%00000000
+	stx	MARIO.BELLYRIGHT.S
+	stx	MARIO.FEETRIGHT.S
 	jsr wait_vblank
 	jsr UpdateSprites
 	
@@ -510,32 +510,38 @@ MarioMove03:
 	rts
 
 MarioMove02:
-	clc
-	lda MARIO.CURRENT.SPRITE
-	sta	MARIO.FEETRIGHT.T
-	sbc	#1
-	sta	MARIO.FEETLEFT.T
-	sbc	#1
-	sta	MARIO.BELLYRIGHT.T
-	sbc	#1
-	sta	MARIO.BELLYLEFT.T
-	sbc	#1
-	sta	MARIO.CHESTRIGHT.T
-	sbc	#1
-	sta	MARIO.CHESTLEFT.T
-	sbc	#1
-	sta	MARIO.HEADRIGHT.T
-	sbc	#1
-	sta	MARIO.HEADLEFT.T
-	sbc	#1
-	sta MARIO.CURRENT.SPRITE
-
-	lda	#%00000000
-	sta	MARIO.BELLYRIGHT.S
-	sta	MARIO.FEETRIGHT.S
+	
+	ldx MARIO.CURRENT.SPRITE
+	stx	MARIO.FEETRIGHT.T
+	dex
+	stx	MARIO.FEETLEFT.T
+	dex
+	stx	MARIO.BELLYRIGHT.T
+	dex
+	stx	MARIO.BELLYLEFT.T
+	dex
+	stx	MARIO.CHESTRIGHT.T
+	dex
+	stx	MARIO.CHESTLEFT.T
+	dex
+	stx	MARIO.HEADRIGHT.T
+	dex
+	stx	MARIO.HEADLEFT.T
+	ldx	#%00000000
+	stx	MARIO.BELLYRIGHT.S
+	stx	MARIO.FEETRIGHT.S
 	jsr wait_vblank
 	jsr UpdateSprites
-	jmp MarioMove03
+	ldx #0
+	stx MARIO.CURRENT.SPRITE
+	rts
+
+	; ldx	#%00000000
+	; sta	MARIO.BELLYRIGHT.S
+	; sta	MARIO.FEETRIGHT.S
+	; jsr wait_vblank
+	; jsr UpdateSprites
+	; jmp MarioMove03
 
 marioMove100:
 	clc
