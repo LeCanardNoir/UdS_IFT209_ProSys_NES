@@ -55,7 +55,7 @@ MARIO.FEETRIGHT.X = $71F
 GAME.TIC.SEC = $200
 GAME.TIC.MARIO = $201
 GAME.TIC.TSEC = $202
-GAME.TICE.SEC.TEN = $203
+GAME.TIC.CLOCK = $203
 
 MARIO.CURRENT.STATE = $204
 MARIO.CURRENT.SPRITE = $205
@@ -126,8 +126,6 @@ Main:
 	sta	CLOCK.DIGIT.X			;...
 	lda	#0						;Les attributs sont  � 0 : palette 0 et aucune transformation
 	sta	CLOCK.DIGIT.S			;....
-
-	jsr wait_vblank
 
 	
 	lda #%10010000	;place la valeur binaire 10010000 dans A
