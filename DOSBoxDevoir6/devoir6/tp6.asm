@@ -510,8 +510,10 @@ MarioMove03:
 	rts
 
 MarioMove02:
-	
-	ldx MARIO.CURRENT.SPRITE
+	clc
+	lda	MARIO.CURRENT.SPRITE
+	sbc #7
+	tax
 	stx	MARIO.FEETRIGHT.T
 	dex
 	stx	MARIO.FEETLEFT.T
@@ -527,21 +529,15 @@ MarioMove02:
 	stx	MARIO.HEADRIGHT.T
 	dex
 	stx	MARIO.HEADLEFT.T
+	
 	ldx	#%00000000
 	stx	MARIO.BELLYRIGHT.S
 	stx	MARIO.FEETRIGHT.S
-	jsr wait_vblank
-	jsr UpdateSprites
 	ldx #0
 	stx MARIO.CURRENT.SPRITE
+	jsr wait_vblank
+	jsr UpdateSprites
 	rts
-
-	; ldx	#%00000000
-	; sta	MARIO.BELLYRIGHT.S
-	; sta	MARIO.FEETRIGHT.S
-	; jsr wait_vblank
-	; jsr UpdateSprites
-	; jmp MarioMove03
 
 marioMove100:
 	clc
