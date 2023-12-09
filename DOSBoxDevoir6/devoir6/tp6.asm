@@ -1,15 +1,15 @@
-	
+
  .inesprg 1
  .ineschr 1
  .inesmir 0
  .inesmap 0
 
- 
+
 
 
 ;Memoire des sprites.  Le segment $700 - $7FF est entierement dedie aux sprites.
  .bss
- 
+
 DEFIL =$600
 MARIO.HEADLEFT.Y = $700
 MARIO.HEADLEFT.T = $701
@@ -52,13 +52,13 @@ MARIO.FEETRIGHT.T = $71D
 MARIO.FEETRIGHT.S = $71E
 MARIO.FEETRIGHT.X = $71F
 
-GAME.TIC.SEC = $200 
-GAME.TIC.HSEC = $201 
+GAME.TIC.SEC = $200
+GAME.TIC.MARIO = $201
 GAME.TIC.TSEC = $202
-GAME.TICE.SEC.TEN = $203 
+GAME.TICE.SEC.TEN = $203
 
 MARIO.CURRENT.STATE = $204
-MARIO.CURRENT.MOVE = $205
+MARIO.CURRENT.SPRITE = $205
 
 
 ;Variables pour conserver les états des boutons.
@@ -87,15 +87,15 @@ Main:
 	stx $2000		;Initialise le PPU temporairement: NMI d�sactiv�es
 
  	jsr InitSpriteMem		;fonction qui met � z�ro la m�moire des sprites
-	jsr palette				;fonction qui initialise les palettes 
+	jsr palette				;fonction qui initialise les palettes
 	jsr Dessiner			;fonction qui dessine le personnage
 	jsr UpdateSprites 		;fonction qui copie l'information dans la m�moire des sprites
-	jsr InitBackground		;Initialise l'arri�re-plan 
+	jsr InitBackground		;Initialise l'arri�re-plan
 
 	lda		#0				;Initialise le d�filement
 	sta		$2005			;... 0 en X
 	sta		$2005			;... 0 en Y
-	
+
 	;Initialise le PPU:
 	; ($2000)
 	;-Interruptions NMI activ�es
@@ -117,10 +117,11 @@ Main:
 	lda #%00011010	;place la valeur binaire 00011010 dans A
 	sta $2001		;�crit dans le registre de contr�le #2
 
-    ldx #0
+    ldx $0000
 	stx GAME.TIC.SEC
-	stx GAME.TIC.HSEC
+	stx GAME.TIC.MARIO
 	stx GAME.TIC.TSEC
+	stx MARIO.CURRENT.SPRITE
     stx DEFIL
 mainEnd:
 	jsr	Lecture
@@ -134,8 +135,8 @@ mainEnd:
 wait_vblank:
  	bit $2002		;teste les bits du registre d'�tat du PPU
  	bpl wait_vblank	;tant que le bit 7 est �teint (signe = 0), on boucle
-	
-	rts			;fin	
+
+	rts			;fin
 
 	;Fonction qui met � z�ro tous les 256 octets du segment r�serv� aux sprites
 
@@ -146,8 +147,8 @@ InitSpriteMem:
 init00:
 	sta $700,y		;�crit 0 � $700 + Y
 	iny				;incr�mente Y
-	bne init00		;lorsque Y redevient 0 (255 + 1 = 0), fin	
-	
+	bne init00		;lorsque Y redevient 0 (255 + 1 = 0), fin
+
 	rts			;fin
 
 
@@ -162,10 +163,10 @@ paldata:
 	.byte	$0f,$0f,$0f,$0f	;Noir
 
 ; Palette des sprites.  La couleur de fond est noir ($0f).
-	.byte	$0f,$16,$27,$18	;Mario normal	
+	.byte	$0f,$16,$27,$18	;Mario normal
 	.byte	$0f,$38,$28,$16	;Mario furieux
 	.byte	$0f,$20,$28,$1a	;Luigi
-	.byte	$0f,$0f,$37,$07	;Goomba, briques		
+	.byte	$0f,$0f,$37,$07	;Goomba, briques
 
 	;fonction qui initialise les palettes.
 palette:
@@ -175,7 +176,7 @@ palette:
 	sta $2006				;avec l'adresse $3F00 : m�moire de palettes
 	lda #0					;...
 	sta $2006				;...
- 
+
 	ldx #0					;index de lecture des valeurs de palette
 
 do_palette:
@@ -184,7 +185,7 @@ do_palette:
 	inx						;incr�mente l'index
 	cpx #32					;a-t-on �crit les 32 couleurs?
 	bne do_palette			;sinon, continue
-	
+
 	rts						;fin
 
 
@@ -195,8 +196,8 @@ NMI_InterruptRoutine:
 
 		;	lda	#$07		;Les sprites se trouvent dans le segment $0700 � $07FF
 		;	sta	$4014		;Commande de copie DMA de tout le segment $0700 � $07FF dans la m�moire des sprites
-		
- rti 
+
+ rti
 
       ;Routine d'interruption pour IRQ/BRK: ne fait rien
 
@@ -205,14 +206,14 @@ GameTicCounter:
 	lda GAME.TIC.SEC
 	adc	#1
 	cmp #60
-	beq gameTicCounter01	
+	beq gameTicCounter01
 	sta GAME.TIC.SEC
 
-	cmp #30
+	lda GAME.TIC.MARIO
+	adc #1
+	cmp #10
 	beq gameTicCounter02
-	lda GAME.TIC.HSEC
-	adc	#1
-	sta GAME.TIC.HSEC
+	sta GAME.TIC.MARIO
 
 	lda GAME.TIC.TSEC
 	adc #1
@@ -220,39 +221,29 @@ GameTicCounter:
 	beq gameTicCounter03
 	sta GAME.TIC.TSEC
 
-	lda MARIO.CURRENT.MOVE
-	adc #16
-	cmp #44
-	bpl gameTicCounter04
-
 	jmp gameTicCounter99
 
 gameTicCounter01:
 	lda #0
 	sta GAME.TIC.SEC
-	sta GAME.TIC.HSEC
-	sta GAME.TIC.TSEC
-	jmp gameTicCounter99
+	;jmp gameTicCounter99
+	rts
 
 gameTicCounter02:
 	lda #0
-	sta GAME.TIC.HSEC
-	sta GAME.TIC.TSEC
-	jmp gameTicCounter99
+	sta GAME.TIC.MARIO
+	;jmp gameTicCounter99
+	rts
 
 gameTicCounter03:
 	lda #0
 	sta GAME.TIC.TSEC
-	jmp gameTicCounter99
-
-gameTicCounter04:
-	lda #0
-	sta MARIO.CURRENT.MOVE
-	jmp gameTicCounter99
+	;jmp gameTicCounter99
+	rts
 
 gameTicCounter99:
 	rts
-	
+
 
 
 
@@ -261,43 +252,41 @@ IRQ_BRK_InterruptRoutine:
 
 	;Mise � jour de la m�moire des sprites par DMA
 
-UpdateSprites: 
+UpdateSprites:
  lda #7			;Segment de la m�moire $0700-$07FF
- sta $4014 		;d�clenche la copie DMA 
+ sta $4014 		;d�clenche la copie DMA
  rts			;fin
 
-Defilement:	
-	ldx RIGHT.READ
-	bne	defilement01
-	ldx LEFT.READ
-	bne	defilement02
-	rts	
+Defilement:
+	; ldx RIGHT.READ
+	; bne	defilement01
+	; ldx LEFT.READ
+	; bne	defilement02
+	; rts
 
 defilement01:
 	lda GAME.TIC.TSEC
 	cmp #0
 	bne defilement99
-	jsr wait_vblank	
-	jsr MarioMove02
+	jsr wait_vblank
 	ldx DEFIL
-	stx $2005            
+	stx $2005
 	;inx
 	;inx
 	;inx
 	inx
 	stx DEFIL
 	ldx #0
-	stx $2005	
+	stx $2005
 	rts
 
 defilement02:
 	lda GAME.TIC.TSEC
 	cmp #0
 	bne defilement99
-	jsr wait_vblank	
-	jsr MarioMove01
+	jsr wait_vblank
 	ldx DEFIL
-	stx $2005            
+	stx $2005
 	;dex
 	;dex
 	;dex
@@ -309,11 +298,11 @@ defilement02:
 
 defilement99:
 	lda #0
-	;sta MARIO.CURRENT.MOVE
+	;sta MARIO.CURRENT.SPRITE
 	rts
 
 
-Lecture:	
+Lecture:
 	;Envoi de la commande préparatoire à la manette
 	ldx 	#1			;valeur 1 dans X
 	stx 	$4016		;écriture de 1 à $4016
@@ -323,40 +312,42 @@ Lecture:
 
 	ldy #0				;Y est un index pour un déplacement
 lecture10:
-	lda 	$4016		;Lecture sur le port de la manette 1	 
-	and 	#1			;Et avec la constante 1: seul le bit 0 est conservé	
+	lda 	$4016		;Lecture sur le port de la manette 1
+	and 	#1			;Et avec la constante 1: seul le bit 0 est conservé
 	sta		A.READ,Y	;Écrit la valeur lue à A.READ + Y
 	iny					;incrémente l’index
 	cpy	#8				;si Y != 8
 	bne	lecture10 		;on continue, sinon, tous les boutons sont lus
 
 	;Vérification si B est enfoncé
-	
+
 	;lda 	B.READ		;obtient la valeur de B
 	;beq 	lecture20	;si c’est 0, passe à la suite du code
-	; B est enfoncé	
-	;code pour B enfoncé	
+	; B est enfoncé
+	;code pour B enfoncé
 	;B n’est pas enfoncé
 
-lecture20:				;suite du code	
+lecture20:				;suite du code
 	lda 	STA.READ		;obtient la valeur de START
 	beq 	lecture30	;si c’est 0, passe à la suite du code
-	; START est enfoncé	
-	;code pour START enfoncé	
+	; START est enfoncé
+	;code pour START enfoncé
 	;START n’est pas enfoncé
 
 lecture30:
 	lda 	RIGHT.READ		;obtient la valeur de RIGHT
 	beq 	lecture40	;si c’est 0, passe à la suite du code
-	; RIGHT est enfoncé	
+	; RIGHT est enfoncé
 	jsr defilement01
+	jsr MarioMove01
 	;code pour RIGHT enfoncé
 	;RIGHT n’est pas enfoncé
 lecture40:
 	lda 	LEFT.READ		;obtient la valeur de RIGHT
 	beq 	lecture50	;si c’est 0, passe à la suite du code
-	; RIGHT est enfoncé	
+	; RIGHT est enfoncé
 	jsr defilement02
+	jsr MarioMove01
 	;code pour RIGHT enfoncé
 	;RIGHT n’est pas enfoncé
 lecture50:
@@ -385,18 +376,18 @@ Dessiner:
 	clc
 	lda	#1
 	sta	MARIO.HEADLEFT.T
-	lda	#0	
+	lda	#0
 	sta	MARIO.HEADLEFT.S
 	lda	#0
 	sta	MARIO.HEADLEFT.Y
 	lda	#0
 	sta	MARIO.HEADLEFT.X
 
-	lda	#2	
+	lda	#2
 	sta	MARIO.HEADRIGHT.T
 
 	lda	#0
-	sta	MARIO.HEADRIGHT.S	
+	sta	MARIO.HEADRIGHT.S
 	lda	#0
 	sta	MARIO.HEADRIGHT.Y
 	lda	#8
@@ -423,8 +414,8 @@ Dessiner:
 	lda	#75
 	sta	MARIO.BELLYLEFT.T
 	sta	MARIO.BELLYRIGHT.T
-	lda	#0	
-	sta	MARIO.BELLYLEFT.S	
+	lda	#0
+	sta	MARIO.BELLYLEFT.S
 	lda	#16
 	sta	MARIO.BELLYLEFT.Y
 	lda	#0
@@ -443,7 +434,7 @@ Dessiner:
 	sta	MARIO.FEETLEFT.T
 	sta	MARIO.FEETRIGHT.T
 	lda	#0
-	sta	MARIO.FEETLEFT.S	
+	sta	MARIO.FEETLEFT.S
 
 	lda	#24
 	sta	MARIO.FEETLEFT.Y
@@ -461,161 +452,173 @@ Dessiner:
 
 
 	ldx	#0
-	
+
 dessiner10:
 	clc
 	lda	#159
 	adc	MARIO.HEADLEFT.Y,X
 	sta	MARIO.HEADLEFT.Y,X
-	
+
 	clc
 	lda	#$7F
 	adc	MARIO.HEADLEFT.X,X
-	sta	MARIO.HEADLEFT.X,X	
+	sta	MARIO.HEADLEFT.X,X
 	inx
 	inx
 	inx
 	inx
 	cpx	#32
 	bne	dessiner10
-	rts	
+	rts
 
-MarioMove:
-	;jsr wait_vblank
-	; ldx RIGHT.READ
-	; bne	MarioMove01
-	; ldx LEFT.READ
-	; bne	MarioMove02
-	; rts	
 MarioMove01:
 	clc
-	lda MARIO.CURRENT.MOVE
-	adc	#1
+	lda GAME.TIC.MARIO
+	cmp #0
+	bne MarioMove03
+	clc
+	lda MARIO.CURRENT.SPRITE
+	cmp #23
+	bpl MarioMove02
+	clc
+	lda MARIO.CURRENT.SPRITE
+	adc #1
 	sta	MARIO.HEADLEFT.T
-	adc	#2	
+	adc #1
 	sta	MARIO.HEADRIGHT.T
-	adc	#3
+	adc #1
 	sta	MARIO.CHESTLEFT.T
-	adc	#4
+	adc #1
 	sta	MARIO.CHESTRIGHT.T
-	adc	#5
+	adc #1
 	sta	MARIO.BELLYLEFT.T
-	adc	#6
+	adc #1
 	sta	MARIO.BELLYRIGHT.T
-	adc	#%00000000
-	sta	MARIO.BELLYRIGHT.S
-	adc	#7
+	adc #1
 	sta	MARIO.FEETLEFT.T
-	adc	#8
+	adc #1
 	sta	MARIO.FEETRIGHT.T
-	adc	#%00000000
+	sta MARIO.CURRENT.SPRITE
+
+	lda	#%00000000
+	sta	MARIO.BELLYRIGHT.S
 	sta	MARIO.FEETRIGHT.S
-    ;jsr wait_vblank
-    jsr UpdateSprites
-	rts	
-MarioMove02:
-	ldx	#1
-	stx	MARIO.HEADLEFT.T
-	ldx	#2	
-	stx	MARIO.HEADRIGHT.T
-	ldx	#3
-	stx	MARIO.CHESTLEFT.T
-	ldx	#4
-	stx	MARIO.CHESTRIGHT.T
-	ldx	#5
-	stx	MARIO.BELLYLEFT.T
-	ldx	#6
-	stx	MARIO.BELLYRIGHT.T
-	ldx	#%00000000
-	stx	MARIO.BELLYRIGHT.S
-	ldx	#7
-	stx	MARIO.FEETLEFT.T
-	ldx	#8
-	stx	MARIO.FEETRIGHT.T
-	ldx	#%00000000
-	stx	MARIO.FEETRIGHT.S
-    ;jsr wait_vblank
-    jsr UpdateSprites
+	jsr wait_vblank
+	jsr UpdateSprites
+	
+MarioMove03:
 	rts
+
+MarioMove02:
+	clc
+	lda MARIO.CURRENT.SPRITE
+	sta	MARIO.FEETRIGHT.T
+	sbc	#1
+	sta	MARIO.FEETLEFT.T
+	sbc	#1
+	sta	MARIO.BELLYRIGHT.T
+	sbc	#1
+	sta	MARIO.BELLYLEFT.T
+	sbc	#1
+	sta	MARIO.CHESTRIGHT.T
+	sbc	#1
+	sta	MARIO.CHESTLEFT.T
+	sbc	#1
+	sta	MARIO.HEADRIGHT.T
+	sbc	#1
+	sta	MARIO.HEADLEFT.T
+	sbc	#1
+	sta MARIO.CURRENT.SPRITE
+
+	lda	#%00000000
+	sta	MARIO.BELLYRIGHT.S
+	sta	MARIO.FEETRIGHT.S
+	jsr wait_vblank
+	jsr UpdateSprites
+	jmp MarioMove03
+
 marioMove100:
 	clc
-	lda	#1
-	sta	MARIO.HEADLEFT.T
-	lda	#2	
-	sta	MARIO.HEADRIGHT.T
-	lda	#77
-	sta	MARIO.CHESTLEFT.T
-	lda	#78
-	sta	MARIO.CHESTRIGHT.T
-	lda	#75
-	sta	MARIO.BELLYLEFT.T
-	sta	MARIO.BELLYRIGHT.T
-	lda	#%01000000
-	sta	MARIO.BELLYRIGHT.S
-	lda	#76
-	sta	MARIO.FEETLEFT.T
-	sta	MARIO.FEETRIGHT.T
-	lda	#%01000000
-	sta	MARIO.FEETRIGHT.S
+	ldx	#1
+	stx	MARIO.HEADLEFT.T
+	ldx	#2
+	stx	MARIO.HEADRIGHT.T
+	ldx	#77
+	stx	MARIO.CHESTLEFT.T
+	ldx	#78
+	stx	MARIO.CHESTRIGHT.T
+	ldx	#75
+	stx	MARIO.BELLYLEFT.T
+	stx	MARIO.BELLYRIGHT.T
+	ldx	#%01000000
+	stx	MARIO.BELLYRIGHT.S
+	ldx	#76
+	stx	MARIO.FEETLEFT.T
+	stx	MARIO.FEETRIGHT.T
+	ldx	#%01000000
+	stx	MARIO.FEETRIGHT.S
+	ldx #0
+	stx MARIO.CURRENT.SPRITE
+	jsr wait_vblank
     jsr UpdateSprites
 	rts
-	
-	
+
+
 InitBackground:
 
 	jsr		wait_vblank		;attend une p�riode de VBlank avant d'�crire dans la table de noms
-	
+
 	lda		#0
 	sta		$2005
 	sta		$2005
-	
+
 	lda		#$20			;8 bits sup�rieurs de l'adresse de la table de noms #0
 	sta		$2006			;�criture dans l'index
 	lda		#00				;8 bits inf�rieurs
 	sta		$2006			;�criture dans l'index
 	ldx		#0				;Initialise le compteur � 0
-	
-	
+
+
 initbg10:
-	
-	lda		bgdata0,X		;lit l'octet � bgdata0 + X, le no de tuile courant	
+
+	lda		bgdata0,X		;lit l'octet � bgdata0 + X, le no de tuile courant
 	sta		$2007			;�crit dans la table de noms
 	inx						;incr�mente l'index
 	cpx		#0				;a-t-on pass� toutes les tuiles?
-	bne		initbg10		;sinon, suite 
-	
-	
+	bne		initbg10		;sinon, suite
+
+
 initbg20:
-	
+
 	lda		bgdata1,X		;lit l'octet � bgdata1 + X, le no de tuile courant
 	sta		$2007			;�crit dans la table de noms
 	inx						;incr�mente l'index
 	cpx		#0				;a-t-on pass� toutes les tuiles?
-	bne		initbg20		;sinon, suite 
-	
+	bne		initbg20		;sinon, suite
+
 initbg30:
-	
+
 	lda		bgdata2,X		;lit l'octet � bgdata2 + X, le no de tuile courant
 	sta		$2007			;�crit dans la table de noms
 	inx						;incr�mente l'index
 	cpx		#0				;a-t-on pass� toutes les tuiles?
-	bne		initbg30		;sinon, suite 
-	
+	bne		initbg30		;sinon, suite
+
 
 initbg40:
-	
+
 	lda		bgdata3,X		;lit l'octet � bgdata3 + X, le no de tuile courant
 	sta		$2007			;�crit dans la table de noms
 	inx						;incr�mente l'index
 	cpx		#192		;a-t-on pass� toutes les tuiles?
-	bne		initbg40		;sinon, suite 
-	
+	bne		initbg40		;sinon, suite
+
 	rts						;fin du sous-programme.
 
 ;Donn�es initiales se trouvant dans la table de noms.
 ;Matrice de 32x30 tuiles.
-	
-	bgdata0:	
+
+	bgdata0:
 	.byte $25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25
 	.byte $25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25
 	.byte $25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25
@@ -623,7 +626,7 @@ initbg40:
 	.byte $25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25
 	.byte $25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25
 	.byte $25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25
-	.byte $25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25	
+	.byte $25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25
 	.byte $25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25
 	.byte $25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25
 	.byte $25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25
@@ -640,7 +643,7 @@ initbg40:
 	.byte $25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25
 	.byte $25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25
 	.byte $25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25
-	.byte $25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25	
+	.byte $25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25
 	.byte $25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25
 	.byte $25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25
 	.byte $25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25,$25
@@ -674,13 +677,13 @@ initbg40:
 	.byte $b5,$b6,$b5,$b6,$b5,$b6,$b5,$b6,$b5,$b6,$b5,$b6,$b5,$b6,$b5,$b6
 	.byte $b5,$b6,$b5,$b6,$b5,$b6,$b5,$b6,$b5,$b6,$b5,$b6,$b5,$b6,$b5,$b6
 	.byte $b7,$b8,$b7,$b8,$b7,$b8,$b7,$b8,$b7,$b8,$b7,$b8,$b7,$b8,$b7,$b8
-	.byte $b7,$b8,$b7,$b8,$b7,$b8,$b7,$b8,$b7,$b8,$b7,$b8,$b7,$b8,$b7,$b8	
+	.byte $b7,$b8,$b7,$b8,$b7,$b8,$b7,$b8,$b7,$b8,$b7,$b8,$b7,$b8,$b7,$b8
 	.byte $b5,$b6,$b5,$b6,$b5,$b6,$b5,$b6,$b5,$b6,$b5,$b6,$b5,$b6,$b5,$b6
 	.byte $b5,$b6,$b5,$b6,$b5,$b6,$b5,$b6,$b5,$b6,$b5,$b6,$b5,$b6,$b5,$b6
 	.byte $b7,$b8,$b7,$b8,$b7,$b8,$b7,$b8,$b7,$b8,$b7,$b8,$b7,$b8,$b7,$b8
 	.byte $b7,$b8,$b7,$b8,$b7,$b8,$b7,$b8,$b7,$b8,$b7,$b8,$b7,$b8,$b7,$b8
-	
-	
+
+
 
  .bank 1
  .org $fffa
