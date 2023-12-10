@@ -60,6 +60,8 @@ GAME.TIC.CLOCK = $203
 MARIO.CURRENT.STATE = $204
 MARIO.CURRENT.SPRITE = $205
 
+CLOCK.START = $206
+
 CLOCK.DIGIT.Y	=	$720		;Premier octet: coordonn�e Y
 CLOCK.DIGIT.T	=	$721		;second octet: num�ro de tuile
 CLOCK.DIGIT.S	=	$722		;troisi�me octet: attributs
@@ -106,8 +108,9 @@ Main:
 	stx GAME.TIC.MARIO
 	stx GAME.TIC.TSEC
 	stx MARIO.CURRENT.SPRITE
-    stx DEFIL
-	
+    stx DEFIL	
+	stx CLOCK.START
+	inx
 	stx GAME.TIC.CLOCK
 
 	;Initialise le PPU:
@@ -242,11 +245,10 @@ GameTicCounter:
 gameTicCounter01:
 	lda #0
 	sta GAME.TIC.SEC
-	;lda GAME.TIC.CLOCK
-	adc GAME.TIC.CLOCK
-	cmp #11
-	bpl gameTicCounter04
-	sta GAME.TIC.CLOCK
+	;lda GAME.TIC.CLOCK	
+	ldx CLOCK.START
+	cpx #1
+	beq gameTicCounter04
 	lda #0
 	;jmp gameTicCounter99
 	rts
@@ -265,9 +267,18 @@ gameTicCounter03:
 
 gameTicCounter04:
 	lda #1
+	adc GAME.TIC.CLOCK
+	cmp #11
+	bpl gameTicCounter05
 	sta GAME.TIC.CLOCK
-	;jmp gameTicCounter99
+	lda #0
 	rts
+
+gameTicCounter05:
+	lda #1
+	sta GAME.TIC.CLOCK
+	rts
+
 
 gameTicCounter99:
 	rts
@@ -389,6 +400,10 @@ lecture100:
 	sta $2001		;�crit dans le registre de contr�le #2	
 	jsr Dessiner
 	jsr ClockDraw01
+	ldx #0
+	stx CLOCK.START
+	inx
+	stx GAME.TIC.CLOCK
 	jsr UpdateSprites
 	rts
 
@@ -415,6 +430,9 @@ ClockDraw01:
 	rts
 
 CockAnime:
+	lda CLOCK.START
+	cmp #0
+	beq CockAnime_on
 	
 	lda #%00010000	;place la valeur binaire 00010000 dans A
 	sta $2001		;�crit dans le registre de contr�le #2
@@ -430,7 +448,12 @@ CockAnime:
 
 	jsr ClockDraw01
 	jsr wait_vblank
-	rts 						;fin de l'interruption.
+	rts
+
+CockAnime_on:
+	ldx #1
+	stx CLOCK.START
+	rts
 
 	;Fonction Dessiner.  Initialise les 8 premiers sprites et les positionne correctement.
 
