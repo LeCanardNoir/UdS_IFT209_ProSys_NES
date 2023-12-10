@@ -110,7 +110,6 @@ Main:
 	stx MARIO.CURRENT.SPRITE
     stx DEFIL	
 	stx CLOCK.START
-	inx
 	stx GAME.TIC.CLOCK
 
 	;Initialise le PPU:
@@ -245,6 +244,8 @@ GameTicCounter:
 gameTicCounter01:
 	lda #0
 	sta GAME.TIC.SEC
+	sta GAME.TIC.TSEC
+	sta GAME.TIC.MARIO
 	;lda GAME.TIC.CLOCK	
 	ldx CLOCK.START
 	cpx #1
@@ -266,7 +267,7 @@ gameTicCounter03:
 	rts
 
 gameTicCounter04:
-	lda #1
+	lda #0
 	adc GAME.TIC.CLOCK
 	cmp #11
 	bpl gameTicCounter05
@@ -297,11 +298,11 @@ UpdateSprites:
  rts			;fin
 
 defilement01:
+	jsr wait_vblank
 	lda GAME.TIC.TSEC
 	cmp #0
 	bne defilement99
 	ldx DEFIL
-	jsr wait_vblank
 	stx $2005
 	inx
 	stx DEFIL
@@ -310,11 +311,11 @@ defilement01:
 	rts
 
 defilement02:
+	jsr wait_vblank
 	lda GAME.TIC.TSEC
 	cmp #0
 	bne defilement99
 	ldx DEFIL
-	jsr wait_vblank
 	stx $2005
 	dex
 	stx DEFIL
@@ -393,17 +394,20 @@ lecture50:
 	beq	lecture100
 	rts
 lecture100:
+	ldx #0
+	stx CLOCK.START
+	stx GAME.TIC.MARIO
+	stx GAME.TIC.TSEC
+	stx GAME.TIC.SEC
+	inx
+	stx GAME.TIC.CLOCK
+	jsr Dessiner
+	jsr ClockDraw01
 	jsr wait_vblank
 	lda #%10010000	;place la valeur binaire 10010000 dans A
 	sta $2000		;�crit dans le registre de contr�le #1
 	lda #%00011010	;place la valeur binaire 00011010 dans A
 	sta $2001		;�crit dans le registre de contr�le #2	
-	jsr Dessiner
-	jsr ClockDraw01
-	ldx #0
-	stx CLOCK.START
-	inx
-	stx GAME.TIC.CLOCK
 	jsr UpdateSprites
 	rts
 
@@ -434,20 +438,19 @@ CockAnime:
 	cmp #0
 	beq CockAnime_on
 	
+	jsr ClockDraw
 	lda #%00010000	;place la valeur binaire 00010000 dans A
 	sta $2001		;�crit dans le registre de contr�le #2
 	lda #%10001000	;place la valeur binaire 10001000 dans A
 	sta $2000		;�crit dans le registre de contr�le #1
 
-	jsr ClockDraw
-
 	lda GAME.TIC.CLOCK	
 	sta CLOCK.DIGIT.T
 		
+	jsr wait_vblank
 	jsr UpdateSprites
 
 	jsr ClockDraw01
-	jsr wait_vblank
 	rts
 
 CockAnime_on:
@@ -621,6 +624,7 @@ MarioMove02:
 	rts
 
 HideMario:
+	;jsr wait_vblank
 	clc
 	lda	#0
 	sta	MARIO.HEADLEFT.Y
@@ -639,6 +643,7 @@ HideMario:
 	sta	MARIO.FEETLEFT.X
 	sta	MARIO.FEETRIGHT.Y
 	sta	MARIO.FEETRIGHT.X
+	;jsr UpdateSprites
 	rts
 
 
