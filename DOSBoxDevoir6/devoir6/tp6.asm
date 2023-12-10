@@ -60,10 +60,10 @@ GAME.TIC.CLOCK = $203
 MARIO.CURRENT.STATE = $204
 MARIO.CURRENT.SPRITE = $205
 
-CLOCK.DIGIT.Y	=	$250		;Premier octet: coordonn�e Y
-CLOCK.DIGIT.T	=	$251		;second octet: num�ro de tuile
-CLOCK.DIGIT.S	=	$252		;troisi�me octet: attributs
-CLOCK.DIGIT.X	=	$253		;quatri�me octet: coordonn�e X
+CLOCK.DIGIT.Y	=	$720		;Premier octet: coordonn�e Y
+CLOCK.DIGIT.T	=	$721		;second octet: num�ro de tuile
+CLOCK.DIGIT.S	=	$722		;troisi�me octet: attributs
+CLOCK.DIGIT.X	=	$723		;quatri�me octet: coordonn�e X
 
 
 ;Variables pour conserver les états des boutons.
@@ -101,6 +101,15 @@ Main:
 	sta		$2005			;... 0 en X
 	sta		$2005			;... 0 en Y
 
+    ldx $0000
+	stx GAME.TIC.SEC
+	stx GAME.TIC.MARIO
+	stx GAME.TIC.TSEC
+	stx MARIO.CURRENT.SPRITE
+    stx DEFIL
+	
+	stx GAME.TIC.CLOCK
+
 	;Initialise le PPU:
 	; ($2000)
 	;-Interruptions NMI activ�es
@@ -109,6 +118,8 @@ Main:
 	;-table de sch�mas pour les sprites: #1
 	;-incr�mentation d'index : +1
 	;-num�ro de table de noms affich�e: 0
+	lda #%10010000	;place la valeur binaire 10010000 dans A
+	sta $2000		;�crit dans le registre de contr�le #1
 
 	;($2001)
 	;-aucune modification d'intensit� des couleurs
@@ -116,29 +127,16 @@ Main:
 	;-arri�re-plan visible
 	;-premi�re colonne invisible pour les sprites mais pas pour l'arri�re-plan
 	;-affichage couleur
-
-
-	lda	#1						;Initialise le no de tuile � 1
-	sta	CLOCK.DIGIT.T			;...
-	lda	#120					;Positionne le chiffre � (128,120)
-	sta	CLOCK.DIGIT.Y			;...
-	lda	#128					;...
-	sta	CLOCK.DIGIT.X			;...
-	lda	#0						;Les attributs sont  � 0 : palette 0 et aucune transformation
-	sta	CLOCK.DIGIT.S			;....
-
-	
-	lda #%10010000	;place la valeur binaire 10010000 dans A
-	sta $2000		;�crit dans le registre de contr�le #1
 	lda #%00011010	;place la valeur binaire 00011010 dans A
 	sta $2001		;�crit dans le registre de contr�le #2
 
-    ldx $0000
-	stx GAME.TIC.SEC
-	stx GAME.TIC.MARIO
-	stx GAME.TIC.TSEC
-	stx MARIO.CURRENT.SPRITE
-    stx DEFIL
+	; lda #%00010000	;place la valeur binaire 00010000 dans A
+	; sta $2401		;�crit dans le registre de contr�le #2
+	; lda #%10001000	;place la valeur binaire 10001000 dans A
+	; sta $2400		;�crit dans le registre de contr�le #1
+
+	
+
 mainEnd:
 	jsr	Lecture
 	;jsr Defilement
@@ -209,6 +207,8 @@ do_palette:
 	;Routine d'interruption pour NMI: met � jour les sprites
 NMI_InterruptRoutine:
 	jsr GameTicCounter
+	;jsr CockAnime
+	
 
 		;	lda	#$07		;Les sprites se trouvent dans le segment $0700 � $07FF
 		;	sta	$4014		;Commande de copie DMA de tout le segment $0700 � $07FF dans la m�moire des sprites
@@ -242,6 +242,12 @@ GameTicCounter:
 gameTicCounter01:
 	lda #0
 	sta GAME.TIC.SEC
+	;lda GAME.TIC.CLOCK
+	adc GAME.TIC.CLOCK
+	cmp #11
+	bpl gameTicCounter04
+	sta GAME.TIC.CLOCK
+	lda #0
 	;jmp gameTicCounter99
 	rts
 
@@ -254,6 +260,12 @@ gameTicCounter02:
 gameTicCounter03:
 	lda #0
 	sta GAME.TIC.TSEC
+	;jmp gameTicCounter99
+	rts
+
+gameTicCounter04:
+	lda #1
+	sta GAME.TIC.CLOCK
 	;jmp gameTicCounter99
 	rts
 
@@ -333,6 +345,7 @@ lecture20:				;suite du code
 	lda 	STA.READ		;obtient la valeur de START
 	beq 	lecture30	;si c’est 0, passe à la suite du code
 	; START est enfoncé
+	jsr CockAnime
 	;code pour START enfoncé
 	;START n’est pas enfoncé
 
@@ -368,9 +381,90 @@ lecture50:
 	beq	lecture100
 	rts
 lecture100:
+	jsr wait_vblank
+	lda #%10010000	;place la valeur binaire 10010000 dans A
+	sta $2000		;�crit dans le registre de contr�le #1
+	lda #%00011010	;place la valeur binaire 00011010 dans A
+	sta $2001		;�crit dans le registre de contr�le #2	
 	jsr marioMove100
 	rts
 
+ClockDraw:
+	lda	#1						;Initialise le no de tuile � 1
+	sta	CLOCK.DIGIT.T			;...
+	lda	#120					;Positionne le chiffre � (128,120)
+	sta	CLOCK.DIGIT.Y			;...
+	lda	#128					;...
+	sta	CLOCK.DIGIT.X			;...
+	lda	#0						;Les attributs sont  � 0 : palette 0 et aucune transformation
+	sta	CLOCK.DIGIT.S			;....
+	rts
+
+ClockDraw01:
+	lda	#0						;Initialise le no de tuile � 1
+	sta	CLOCK.DIGIT.T			;...
+	lda	#0					;Positionne le chiffre � (128,120)
+	sta	CLOCK.DIGIT.Y			;...
+	lda	#0					;...
+	sta	CLOCK.DIGIT.X			;...
+	lda	#0						;Les attributs sont  � 0 : palette 0 et aucune transformation
+	sta	CLOCK.DIGIT.S			;....
+	rts
+
+CockAnime:
+	
+	lda #%00010000	;place la valeur binaire 00010000 dans A
+	sta $2001		;�crit dans le registre de contr�le #2
+	lda #%10001000	;place la valeur binaire 10001000 dans A
+	sta $2000		;�crit dans le registre de contr�le #1
+
+	jsr ClockDraw
+
+ClockLoop:
+	; clc							;Place le report � 0
+	; lda		GAME.TIC.SEC		;R�cup�re le compteur
+	; adc		#1					;incr�mente le compteur
+	; sta		GAME.TIC.CLOCK		;met � jour la variable
+	; sec							;Place le report � 1 (et donc l'emprunt � 0)
+	; sbc		#60					;compare avec 60
+	; bne		CockAnime02				;si on n'a pas atteint 60, rien � faire
+	
+	; ;GAME.TIC.CLOCK == 60: il faut mettre � jour le chiffre affich�
+	
+	; lda		#0					
+	; sta		GAME.TIC.CLOCK		;replace le compteur � 0
+	; clc							;Place le report � 0
+	; lda		#1					;Acc = 1
+	; adc		CLOCK.DIGIT.T		;Acc += No. de tuile
+	; sta		CLOCK.DIGIT.T		;Met � jour le no de tuile
+	; sec							;emprunt = 0
+	; sbc		#11					;a-t-on d�pass� la tuile no 10 (caract�re '9') ?
+	; bne		CockAnime01				;non, mise � jour des sprites
+	
+	; ;No de tuile plus grand que 10: il faut retourner � la tuile no 1 (caract�re '0')
+	
+	; lda		#1
+	; sta		CLOCK.DIGIT.T		;no de tuile = 1
+
+	lda GAME.TIC.CLOCK	
+	sta CLOCK.DIGIT.T
+	
+	;jsr lecture50
+	;jmp ClockLoop
+	
+CockAnime01:		
+	; lda		#$07				;Le segment de la m�moire choisi est $0700 � $07FF
+	; sta		$4014				; Mise � jour de la m�moire des sprites par DMA
+	jsr UpdateSprites
+
+CockAnime02:	
+	jsr ClockDraw01
+	jsr wait_vblank
+	; lda #%10010000	;place la valeur binaire 10010000 dans A
+	; sta $2000		;�crit dans le registre de contr�le #1
+	; lda #%00011010	;place la valeur binaire 00011010 dans A
+	; sta $2001		;�crit dans le registre de contr�le #2	
+	rts 						;fin de l'interruption.
 
 	;Fonction Dessiner.  Initialise les 8 premiers sprites et les positionne correctement.
 
