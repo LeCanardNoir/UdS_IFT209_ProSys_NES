@@ -345,6 +345,7 @@ lecture20:				;suite du code
 	lda 	STA.READ		;obtient la valeur de START
 	beq 	lecture30	;si c’est 0, passe à la suite du code
 	; START est enfoncé
+	jsr HideMario
 	jsr CockAnime
 	;code pour START enfoncé
 	;START n’est pas enfoncé
@@ -386,7 +387,9 @@ lecture100:
 	sta $2000		;�crit dans le registre de contr�le #1
 	lda #%00011010	;place la valeur binaire 00011010 dans A
 	sta $2001		;�crit dans le registre de contr�le #2	
-	jsr marioMove100
+	jsr Dessiner
+	jsr ClockDraw01
+	jsr UpdateSprites
 	rts
 
 ClockDraw:
@@ -420,50 +423,13 @@ CockAnime:
 
 	jsr ClockDraw
 
-ClockLoop:
-	; clc							;Place le report � 0
-	; lda		GAME.TIC.SEC		;R�cup�re le compteur
-	; adc		#1					;incr�mente le compteur
-	; sta		GAME.TIC.CLOCK		;met � jour la variable
-	; sec							;Place le report � 1 (et donc l'emprunt � 0)
-	; sbc		#60					;compare avec 60
-	; bne		CockAnime02				;si on n'a pas atteint 60, rien � faire
-	
-	; ;GAME.TIC.CLOCK == 60: il faut mettre � jour le chiffre affich�
-	
-	; lda		#0					
-	; sta		GAME.TIC.CLOCK		;replace le compteur � 0
-	; clc							;Place le report � 0
-	; lda		#1					;Acc = 1
-	; adc		CLOCK.DIGIT.T		;Acc += No. de tuile
-	; sta		CLOCK.DIGIT.T		;Met � jour le no de tuile
-	; sec							;emprunt = 0
-	; sbc		#11					;a-t-on d�pass� la tuile no 10 (caract�re '9') ?
-	; bne		CockAnime01				;non, mise � jour des sprites
-	
-	; ;No de tuile plus grand que 10: il faut retourner � la tuile no 1 (caract�re '0')
-	
-	; lda		#1
-	; sta		CLOCK.DIGIT.T		;no de tuile = 1
-
 	lda GAME.TIC.CLOCK	
 	sta CLOCK.DIGIT.T
-	
-	;jsr lecture50
-	;jmp ClockLoop
-	
-CockAnime01:		
-	; lda		#$07				;Le segment de la m�moire choisi est $0700 � $07FF
-	; sta		$4014				; Mise � jour de la m�moire des sprites par DMA
+		
 	jsr UpdateSprites
 
-CockAnime02:	
 	jsr ClockDraw01
 	jsr wait_vblank
-	; lda #%10010000	;place la valeur binaire 10010000 dans A
-	; sta $2000		;�crit dans le registre de contr�le #1
-	; lda #%00011010	;place la valeur binaire 00011010 dans A
-	; sta $2001		;�crit dans le registre de contr�le #2	
 	rts 						;fin de l'interruption.
 
 	;Fonction Dessiner.  Initialise les 8 premiers sprites et les positionne correctement.
@@ -631,30 +597,25 @@ MarioMove02:
 	jsr UpdateSprites
 	rts
 
-marioMove100:
+HideMario:
 	clc
-	ldx	#1
-	stx	MARIO.HEADLEFT.T
-	ldx	#2
-	stx	MARIO.HEADRIGHT.T
-	ldx	#77
-	stx	MARIO.CHESTLEFT.T
-	ldx	#78
-	stx	MARIO.CHESTRIGHT.T
-	ldx	#75
-	stx	MARIO.BELLYLEFT.T
-	stx	MARIO.BELLYRIGHT.T
-	ldx	#%01000000
-	stx	MARIO.BELLYRIGHT.S
-	ldx	#76
-	stx	MARIO.FEETLEFT.T
-	stx	MARIO.FEETRIGHT.T
-	ldx	#%01000000
-	stx	MARIO.FEETRIGHT.S
-	ldx #0
-	stx MARIO.CURRENT.SPRITE
-	jsr wait_vblank
-    jsr UpdateSprites
+	lda	#0
+	sta	MARIO.HEADLEFT.Y
+	sta	MARIO.HEADLEFT.X
+	sta	MARIO.HEADRIGHT.Y
+	sta	MARIO.HEADRIGHT.X
+	sta	MARIO.CHESTLEFT.Y
+	sta	MARIO.CHESTLEFT.X
+	sta	MARIO.CHESTRIGHT.Y
+	sta	MARIO.CHESTRIGHT.X
+	sta	MARIO.BELLYLEFT.Y
+	sta	MARIO.BELLYLEFT.X
+	sta	MARIO.BELLYRIGHT.Y
+	sta	MARIO.BELLYRIGHT.X
+	sta	MARIO.FEETLEFT.Y
+	sta	MARIO.FEETLEFT.X
+	sta	MARIO.FEETRIGHT.Y
+	sta	MARIO.FEETRIGHT.X
 	rts
 
 
